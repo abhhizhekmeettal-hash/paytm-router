@@ -1,9 +1,11 @@
+
 from flask import Flask, request, redirect, render_template_string
 
 app = Flask(__name__)
 
-BUSINESS_UPI = "vegJar90401809711495@paytm"  
-PERSONAL_UPI = "8826705336@ptyes"             
+# Updated accounts configuration
+BUSINESS_UPI = "Q978110034@ybl"       # For amounts < 2000
+PERSONAL_UPI = "8826705336@ptyes"     # For amounts >= 2000
 
 HTML_PAGE = """
 <!DOCTYPE html>
@@ -42,6 +44,7 @@ def pay():
     except ValueError:
         return "Invalid amount", 400
 
+    # Conditional routing logic based on threshold
     if amount < 2000:
         target_vpa = BUSINESS_UPI
         narration = "Business Payment"
@@ -49,6 +52,7 @@ def pay():
         target_vpa = PERSONAL_UPI
         narration = "Personal Payment"
 
+    # Construct standard UPI intent link
     upi_intent = f"upi://pay?pa={target_vpa}&pn=Merchant&am={amount:.2f}&cu=INR&tn={narration}"
     return redirect(upi_intent)
 
