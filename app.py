@@ -1,9 +1,7 @@
-from flask import Flask, request, render_template_string
+
+from flask import Flask, render_template_string, send_from_directory
 
 app = Flask(__name__)
-
-BUSINESS_UPI = "Q978110034@ybl"       # For amounts < 2000
-PERSONAL_UPI = "8826705336@ptyes"     # For amounts >= 2000
 
 @app.route('/')
 def home():
@@ -12,68 +10,48 @@ def home():
     <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Quick Pay</title>
+        <title>Select QR Code to Pay</title>
         <style>
-            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f4f7f6; }
-            .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-            input { width: 100%; padding: 12px; font-size: 18px; margin: 15px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; text-align: center; }
-            button { background: #00baf2; color: white; border: none; padding: 12px; width: 100%; font-size: 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-            button:hover { background: #0098c7; }
+            body { font-family: Arial, sans-serif; text-align: center; background: #f4f7f6; padding: 15px; margin: 0; }
+            .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+            .section { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+            .section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+            img { width: 200px; height: 200px; border-radius: 8px; border: 2px solid #00baf2; margin-top: 10px; }
+            h2 { color: #333; font-size: 18px; margin-bottom: 15px; }
+            p { font-size: 13px; color: #666; margin: 5px 0; }
+            .tag-biz { background: #e0f7fa; color: #00796b; padding: 5px 10px; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 14px; }
+            .tag-per { background: #e8f5e9; color: #2e7d32; padding: 5px 10px; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 14px; }
         </style>
     </head>
     <body>
-        <div class="card">
-            <h2>Enter Bill Amount</h2>
-            <form action="/pay" method="POST">
-                <input type="number" step="0.01" name="amount" placeholder="₹ Amount" required autofocus>
-                <button type="submit">Proceed to Pay</button>
-            </form>
+        <div class="container">
+            <h2>Select QR Based on Your Bill Amount</h2>
+            
+            <div class="section">
+                <span class="tag-biz">For Less than ₹2,000</span>
+                <p><b>Paytm Business Account</b></p>
+                <img src="/qr/business" alt="Business QR Code">
+                <p>Screenshot & use <b>Scan from Gallery</b> in your UPI app</p>
+            </div>
+
+            <div class="section">
+                <span class="tag-per">For ₹2,000 & Above</span>
+                <p><b>Personal Paytm Account</b></p>
+                <img src="/qr/personal" alt="Personal QR Code">
+                <p>Screenshot & use <b>Scan from Gallery</b> in your UPI app</p>
+            </div>
         </div>
     </body>
     </html>
     """)
 
-@app.route('/pay', methods=['POST'])
-def pay():
-    try:
-        amount = float(request.form['amount'])
-    except ValueError:
-        return "Invalid amount", 400
+@app.route('/qr/business')
+def business_qr():
+    return send_from_directory('.', 'business_qr.png')
 
-    if amount < 2000:
-        target_vpa = BUSINESS_UPI
-        narration = "Business Payment"
-    else:
-        target_vpa = PERSONAL_UPI
-        narration = "Personal Payment"
-
-    upi_intent = f"upi://pay?pa={target_vpa}&pn=Merchant&am={amount:.2f}&cu=INR&tn={narration}"
-    
-    # Instead of an auto-redirect (which triggers policy blocks), 
-    # we display a safe clickable button for the user.
-    return render_template_string(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Complete Payment</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f4f7f6; }}
-            .card {{ background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }}
-            .btn {{ background: #00baf2; color: white; text-decoration: none; display: block; padding: 14px; font-size: 18px; border-radius: 6px; font-weight: bold; margin-top: 15px; }}
-            .btn:hover {{ background: #0098c7; }}
-            p {{ font-size: 16px; color: #333; }}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h2>Amount: ₹{amount:.2f}</h2>
-            <p>Click the button below to open your UPI app securely:</p>
-            <a href="{upi_intent}" class="btn">Open UPI App</a>
-        </div>
-    </body>
-    </html>
-    """)
+@app.route('/qr/personal')
+def personal_qr():
+    return send_from_directory('.', 'personal_qr.png')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
